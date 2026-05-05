@@ -1,0 +1,10 @@
+google-cloud-aiplatform[agent_engines,adk]>=1.112
+google-adk
+google-genai
+browserbase
+playwright
+pydantic
+python-dotenv
+requests
+beautifulsoup4
+tldextract
