@@ -6,6 +6,14 @@ from shopping_agent.verification_agent import verification_agent
 from shopping_agent.reranking_agent import reranking_agent
 from shopping_agent.bundle_planner_agent import bundle_planner_agent
 from shopping_agent.critic_agent import critic_agent
+from shopping_agent.final_output_agent import final_output_agent
+
+from shopping_agent.debug_state_agent import (
+    debug_after_final_output_agent,
+    debug_after_planner_agent,
+    debug_after_reranking_agent,
+    debug_after_web_discovery_agent,
+)
 
 
 root_agent = SequentialAgent(
@@ -17,10 +25,15 @@ root_agent = SequentialAgent(
     ),
     sub_agents=[
         planner_agent,
+        debug_after_planner_agent,
         web_discovery_agent,
-        verification_agent,
+        debug_after_web_discovery_agent,
+       # verification_agent,
         reranking_agent,
-        bundle_planner_agent,
+        debug_after_reranking_agent,
+        final_output_agent,
+        debug_after_final_output_agent,
+       # bundle_planner_agent,
        # critic_agent,
     ],
 )

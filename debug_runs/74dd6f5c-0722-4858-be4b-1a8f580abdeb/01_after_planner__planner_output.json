@@ -1,0 +1,40 @@
+{
+  "interpreted_need": "Find durable, scratch-resistant items for the home under $200.",
+  "task_type": "single_product_search",
+  "user_profile": {
+    "styles": [],
+    "colors": [],
+    "materials": [
+      "scratch resistant",
+      "durable"
+    ],
+    "brands": [],
+    "avoid": [],
+    "room_or_use_case": "home living room kitchen"
+  },
+  "constraints": {
+    "country": "US",
+    "currency": "USD",
+    "total_budget": 200,
+    "required_categories": [
+      "home goods",
+      "decor",
+      "kitchenware",
+      "furniture accessories"
+    ],
+    "must_have": [
+      "scratch resistant",
+      "under $200"
+    ],
+    "nice_to_have": [
+      "tabletop protector",
+      "furniture",
+      "floor mat",
+      "pet bowl",
+      "cutting board",
+      "storage"
+    ]
+  },
+  "browser_query": "scratch resistant durable home goods decor kitchenware furniture accessories tabletop protector floor mat pet items storage solutions under $200",
+  "search_strategy": "web_only"
+}
