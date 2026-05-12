@@ -1,3 +1,77 @@
+# import os
+
+
+# from dotenv import load_dotenv
+
+# # Load .env before ADK/model initialization.
+# load_dotenv()
+
+# # Force Vertex AI / ADC mode.
+# # This prevents ADK from trying to use the Gemini Developer API key path.
+# os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "TRUE")
+
+# PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT")
+# LOCATION = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+
+# if not PROJECT_ID:
+#     raise RuntimeError(
+#         "Missing GOOGLE_CLOUD_PROJECT. "
+#         "Set it in .env or export it before running ADK."
+#     )
+
+# os.environ.setdefault("GOOGLE_CLOUD_LOCATION", LOCATION)
+
+# from google.adk.agents.llm_agent import LlmAgent  # noqa: E402
+
+# MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+
+
+# planner_agent = LlmAgent(
+#     name="PlannerAgent",
+#     model=MODEL,
+#     description="Extracts structured shopping intent, constraints, and browser query.",
+#     instruction="""
+# You are the planner for a personalized shopping recommendation system.
+
+# Convert the user request into strict JSON.
+
+# Return only JSON with this schema:
+# {
+#   "interpreted_need": "string",
+#   "task_type": "single_product_search | bundle_recommendation | similar_product_search | gift_recommendation | style_based_recommendation",
+#   "user_profile": {
+#     "styles": [],
+#     "colors": [],
+#     "materials": [],
+#     "brands": [],
+#     "avoid": [],
+#     "room_or_use_case": ""
+#   },
+#   "constraints": {
+#     "country": "US",
+#     "currency": "USD",
+#     "total_budget": null,
+#     "required_categories": [],
+#     "must_have": [],
+#     "nice_to_have": []
+#   },
+#   "browser_query": "broad ecommerce search query",
+#   "search_strategy": "web_only"
+# }
+
+# Rules:
+# - Do not invent a budget.
+# - If the user asks for a bundle, identify required categories.
+# - Preserve country, budget, style, color, material, brand, size, compatibility, and room/use case.
+# - Make browser_query broad enough to find live ecommerce product pages.
+# - Prefer country "US" unless the user explicitly asks for India or another country.
+# - Return JSON only.
+# """,
+#     output_key="planner_output",
+# )
+
+
+
 # shopping_agent/planner_agent.py
 
 import os
@@ -31,8 +105,7 @@ planner_agent = LlmAgent(
     model=MODEL,
     description=(
         "Extracts structured shopping intent and creates a broad, "
-        "high-recall browser query for ecommerce candidate retrieval. "
-        "Self-evaluates plan confidence based on available information."
+        "high-recall browser query for ecommerce candidate retrieval."
     ),
     instruction="""
 You are the Planner Agent for a personalized ecommerce recommendation system.
@@ -46,17 +119,12 @@ The browser_query is NOT the final recommendation query.
 The browser_query is only for candidate retrieval.
 Downstream cross-encoder reranking will handle relevance and precision.
 
-You must also self-evaluate your confidence in the plan based on how much
-information the user provided.
-
 Return only strict JSON.
 
 Use this schema exactly:
 {
   "interpreted_need": "string",
   "task_type": "single_product_search | bundle_recommendation | similar_product_search | gift_recommendation | style_based_recommendation",
-  "confidence_score": 0-100,
-  "confidence_reasoning": "string explaining why this score",
   "user_profile": {
     "styles": [],
     "colors": [],
@@ -123,43 +191,10 @@ Planning rules:
    - If user says "no leather", "avoid glass", "not white", put these in user_profile.avoid.
    - Do not remove the whole category because of avoid terms.
 
-9. Confidence Scoring (NEW):
-   Before producing your plan, evaluate how complete the user's information is.
-   Assign confidence_score (integer 0-100) based on what you know:
-
-   HIGH confidence (80-100):
-   - User provided clear budget AND clear category/item type.
-   - User provided multiple specifics (style, room, materials, colors).
-   - Examples:
-     * "Modern fabric sofa under $1500 for living room" -> 90
-     * "Japandi living room bundle under $800 with coffee table, rug, floor lamp, wall decor" -> 95
-
-   MEDIUM confidence (50-79):
-   - User provided category/item type but missing budget OR style OR room.
-   - Some assumptions needed but plan is still reasonable.
-   - Examples:
-     * "I need a sofa" -> 60 (category clear, no budget/style/room)
-     * "Furniture for my home office" -> 65 (room clear, no budget/specifics)
-     * "Pet decor under $100" -> 70 (budget and rough category clear, item type vague)
-
-   LOW confidence (below 50):
-   - Critical information missing (no category, no budget, no room).
-   - Plan would require many assumptions.
-   - Examples:
-     * "I need furniture" -> 35 (no category, no budget, no room)
-     * "Something for my home" -> 25 (everything vague)
-     * "Matching furniture under $1000" -> 45 (budget clear, but "matching" unclear without image context)
-
-   In confidence_reasoning, briefly state WHY you assigned this score.
-   Examples of good reasoning:
-   - "Budget, room, style, and 4 specific categories all provided"
-   - "Category clear (sofa) but no budget or style preferences specified"
-   - "Only budget mentioned, no category, room, or style"
-
-10. Return JSON only.
-    - No markdown.
-    - No explanation.
-    - No comments.
+9. Return JSON only.
+   - No markdown.
+   - No explanation.
+   - No comments.
 
 Good examples:
 
@@ -170,8 +205,6 @@ Output:
 {
   "interpreted_need": "Find affordable pet-friendly decor and utility items for the home under $100.",
   "task_type": "single_product_search",
-  "confidence_score": 70,
-  "confidence_reasoning": "Budget clear ($100) and rough category clear (pet decor), but no specific items, style, or room mentioned.",
   "user_profile": {
     "styles": [],
     "colors": [],
@@ -199,8 +232,6 @@ Output:
 {
   "interpreted_need": "Find durable scratch-resistant decor items under $50.",
   "task_type": "single_product_search",
-  "confidence_score": 72,
-  "confidence_reasoning": "Budget ($50) and material requirement (scratch resistant) clear, but no specific style, room, or item type specified.",
   "user_profile": {
     "styles": [],
     "colors": [],
@@ -228,8 +259,6 @@ Output:
 {
   "interpreted_need": "Create a Japandi living room bundle under $800 including a coffee table, rug, floor lamp, and wall decor.",
   "task_type": "bundle_recommendation",
-  "confidence_score": 95,
-  "confidence_reasoning": "All key information provided: style (Japandi), room (living room), budget ($800), and 4 specific categories.",
   "user_profile": {
     "styles": ["Japandi"],
     "colors": [],
